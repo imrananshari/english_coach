@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+!.env.example
+.expo/
+.next/
+dist/
+build/
+coverage/
+.turbo/
+android/
+ios/
+*.log
+.DS_Store
