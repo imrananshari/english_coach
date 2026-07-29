@@ -33,6 +33,8 @@ const config: ExpoConfig = {
   web: {
     bundler: 'metro',
     output: 'static',
+    name: 'English Coach',
+    shortName: 'Eng Coach',
     favicon: './assets/images/favicon.png',
   },
   plugins: [

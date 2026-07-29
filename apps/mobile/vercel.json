@@ -1,0 +1,13 @@
+{
+  "buildCommand": "corepack pnpm run build:web",
+  "outputDirectory": "dist",
+  "devCommand": "corepack pnpm run web",
+  "cleanUrls": true,
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://english-coach-server.vercel.app/api/:path*"
+    }
+  ]
+}

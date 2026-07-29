@@ -53,6 +53,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      safeAreaInsets={Platform.OS === 'android' ? { bottom: 0 } : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#146ef5',
@@ -64,7 +65,7 @@ export default function TabsLayout() {
         tabBarBackground: () => <GlassBackground />,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 18 : 5,
+          bottom: Platform.OS === 'ios' ? 18 : 0,
           left: sideMargin,
           right: sideMargin,
           height: 70,

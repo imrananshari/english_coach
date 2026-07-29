@@ -7,11 +7,8 @@ const configuredApiUrl =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 
 function resolveApiBaseUrl(): string {
-  if (
-    Platform.OS === 'web' &&
-    process.env.NODE_ENV !== 'production' &&
-    typeof window !== 'undefined'
-  ) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (process.env.NODE_ENV === 'production') return window.location.origin;
     return `${window.location.protocol}//${window.location.hostname}:3000`;
   }
   return configuredApiUrl || PRODUCTION_API_URL;
