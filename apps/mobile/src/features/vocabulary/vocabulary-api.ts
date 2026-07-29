@@ -1,3 +1,5 @@
+import type * as Ably from 'ably';
+
 import { apiClient } from '@/lib/api-client';
 import { getAuthenticatedHeaders } from '@/lib/auth-client';
 
@@ -32,17 +34,29 @@ export interface VocabularyData {
   categoryCount: number;
   catalogueTarget: number;
   resultCount: number;
+  selectedLetter: string;
+  hasMore: boolean;
   activeFilter: VocabularyFilter;
   stats: { learned: number; learning: number; difficult: number; dueToday: number };
 }
-export const vocabularyQueryKey = (category: string, search = '', filter: VocabularyFilter = 'all') => ['vocabulary', category, search, filter] as const;
-export function fetchVocabulary(category: string, search = '', filter: VocabularyFilter = 'all'): Promise<VocabularyData> {
-  const query = new URLSearchParams({ category, filter, ...(search.length >= 2 ? { search } : {}) });
+export const vocabularyQueryKey = (category: string, search = '', filter: VocabularyFilter = 'all', letter = 'all', limit = 20) => ['vocabulary', category, search, filter, letter, limit] as const;
+export function fetchVocabulary(category: string, search = '', filter: VocabularyFilter = 'all', letter = 'all', limit = 20): Promise<VocabularyData> {
+  const query = new URLSearchParams({ category, filter, letter, limit: String(limit), ...(search.length >= 2 ? { search } : {}) });
   return apiClient.get(`/api/vocabulary?${query}`, { headers: getAuthenticatedHeaders() });
 }
 export function reviewVocabulary(vocabularyId: string, action: 'learning' | 'difficult' | 'remembered') {
   return apiClient.patch<{ status: VocabularyStatus; nextReviewDate: string }>('/api/vocabulary', { vocabularyId, action }, { headers: getAuthenticatedHeaders() });
 }
 export function generateVocabularyPack(category: string) {
-  return apiClient.post<{ added: number; total: number; message: string }>('/api/vocabulary', { category }, { headers: getAuthenticatedHeaders(), timeoutMs: 60_000 });
+  return apiClient.post<{
+    added: number;
+    total: number;
+    categoryCount: number;
+    message: string;
+    category: string;
+    words: VocabularyWord[];
+  }>('/api/vocabulary', { category }, { headers: getAuthenticatedHeaders(), timeoutMs: 60_000 });
+}
+export function fetchVocabularyToken() {
+  return apiClient.post<Ably.TokenRequest>('/api/vocabulary/token', undefined, { headers: getAuthenticatedHeaders() });
 }

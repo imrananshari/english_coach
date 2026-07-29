@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Ably from 'ably';
+import { AblyProvider, ChannelProvider, useChannel } from 'ably/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Speech from 'expo-speech';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { fetchVocabulary, generateVocabularyPack, reviewVocabulary, vocabularyQueryKey, type VocabularyFilter, type VocabularyWord } from './vocabulary-api';
+import { fetchVocabulary, fetchVocabularyToken, generateVocabularyPack, reviewVocabulary, vocabularyQueryKey, type VocabularyData, type VocabularyFilter, type VocabularyWord } from './vocabulary-api';
 
 const defaultCategory = 'Daily Conversation';
 const fallbackCategories = [defaultCategory, 'Office & Meetings', 'Business Email', 'Customer Service', 'Job Interviews', 'Travel', 'Feelings', 'Technology', 'Study & Academic', 'Phrasal Verbs', 'Idioms', 'Gen Z & Slang'];
+const alphabet = ['all', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 type ReviewAction = 'learning' | 'difficult' | 'remembered';
 
 function ScalePressable({ children, className, disabled, flex, onPress, pulseKey }: { children: ReactNode; className: string; disabled?: boolean; flex?: boolean; onPress: () => void; pulseKey?: string | number }) {
@@ -109,30 +112,91 @@ function WordCard({ word, saving, onReview }: { word: VocabularyWord; saving: bo
   );
 }
 
+type SharedVocabularyEvent = {
+  added: number;
+  total: number;
+  categoryCount: number;
+  category: string;
+  words: VocabularyWord[];
+};
+
+const errorText = (error: unknown) => error instanceof Error ? error.message : 'Vocabulary realtime failed.';
+
 export function VocabularyScreen() {
+  const client = useMemo(
+    () => new Ably.Realtime({
+      autoConnect: true,
+      authCallback: (_params, callback) => {
+        fetchVocabularyToken()
+          .then((token) => callback(null, token))
+          .catch((error) => callback(errorText(error), null));
+      },
+    }),
+    [],
+  );
+  useEffect(() => () => client.close(), [client]);
+  return (
+    <AblyProvider client={client}>
+      <ChannelProvider channelName="vocabulary:catalogue">
+        <VocabularyCatalogue />
+      </ChannelProvider>
+    </AblyProvider>
+  );
+}
+
+function VocabularyCatalogue() {
   const [category, setCategory] = useState(defaultCategory);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [generationMessage, setGenerationMessage] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<VocabularyFilter>('all');
+  const [letter, setLetter] = useState('all');
+  const [visibleLimit, setVisibleLimit] = useState(20);
   const queryClient = useQueryClient();
   const vocabulary = useQuery({
-    queryKey: vocabularyQueryKey(category, submittedSearch, statusFilter),
-    queryFn: () => fetchVocabulary(category, submittedSearch, statusFilter),
-    placeholderData: (previous) => previous,
+    queryKey: vocabularyQueryKey(category, submittedSearch, statusFilter, letter, visibleLimit),
+    queryFn: () => fetchVocabulary(category, submittedSearch, statusFilter, letter, visibleLimit),
+  });
+
+  useChannel('vocabulary:catalogue', (event) => {
+    if (event.name !== 'vocabulary-generated') return;
+    const data = event.data as SharedVocabularyEvent;
+    const activeKey = vocabularyQueryKey(category, submittedSearch, statusFilter, letter, visibleLimit);
+    queryClient.setQueryData<VocabularyData>(activeKey, (current) => {
+      if (!current) return current;
+      if (data.category !== category || submittedSearch || statusFilter !== 'all') {
+        return { ...current, catalogCount: data.total };
+      }
+      const matching = data.words.filter((word) =>
+        letter === 'all' || word.word.trim().toUpperCase().startsWith(letter),
+      );
+      const knownIds = new Set(current.words.map((word) => word.id));
+      const fresh = matching.filter((word) => !knownIds.has(word.id));
+      return {
+        ...current,
+        words: [...fresh, ...current.words].sort((left, right) => left.word.localeCompare(right.word)),
+        catalogCount: data.total,
+        categoryCount: data.categoryCount,
+        resultCount: current.resultCount + fresh.length,
+      };
+    });
   });
 
   const submitSearch = () => {
     const value = search.trim();
     setSubmittedSearch(value.length >= 2 ? value : '');
     setStatusFilter('all');
+    setLetter('all');
+    setVisibleLimit(20);
     Keyboard.dismiss();
   };
   const clearSearch = () => {
     setSearch('');
     setSubmittedSearch('');
     setStatusFilter('all');
+    setLetter('all');
+    setVisibleLimit(20);
     Keyboard.dismiss();
   };
 
@@ -145,11 +209,37 @@ export function VocabularyScreen() {
     },
   });
   const generatePack = useMutation({
-    mutationFn: () => generateVocabularyPack(category),
+    mutationFn: (targetCategory: string) => generateVocabularyPack(targetCategory),
     onMutate: () => setGenerationMessage(null),
-    onSuccess: async (data) => {
+    onSuccess: (data, targetCategory) => {
       setGenerationMessage(data.message);
-      await queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      setSearch('');
+      setSubmittedSearch('');
+      setStatusFilter('all');
+      setLetter('all');
+      setVisibleLimit(20);
+      queryClient.setQueryData<VocabularyData>(
+        vocabularyQueryKey(targetCategory, '', 'all', 'all', 20),
+        (current) => {
+          if (!current) return current;
+          const knownIds = new Set(current.words.map((word) => word.id));
+          const fresh = data.words.filter((word) => !knownIds.has(word.id));
+          return {
+            ...current,
+            words: [...fresh, ...current.words].sort((left, right) => left.word.localeCompare(right.word)),
+            resultCount: current.resultCount + fresh.length,
+            catalogCount: data.total,
+            categoryCount: data.categoryCount,
+            activeFilter: 'all',
+            selectedLetter: 'all',
+            hasMore: true,
+          };
+        },
+      );
+      void queryClient.invalidateQueries({
+        queryKey: ['vocabulary'],
+        refetchType: 'none',
+      });
     },
     onError: (error) => setGenerationMessage(error.message),
   });
@@ -161,15 +251,15 @@ export function VocabularyScreen() {
           <Ionicons name="arrow-back" size={22} color="#10233f" />
         </Pressable>
         <View className="ml-4">
-          <Text className="text-2xl font-extrabold text-[#10233f]">Daily vocabulary</Text>
-          <Text className="text-sm text-[#718198]">Learn, remember, review</Text>
+          <Text className="text-2xl font-extrabold text-[#10233f]">Shared vocabulary</Text>
+          <Text className="text-sm text-[#718198]">Global dictionary Â· learn and review</Text>
         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-28" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-5 py-3">
           {(vocabulary.data?.categories ?? fallbackCategories).map((item) => (
-            <Pressable key={item} onPress={() => { setCategory(item); setGenerationMessage(null); clearSearch(); }} className={`rounded-full border px-4 py-2.5 ${category === item ? 'border-[#146ef5] bg-[#146ef5]' : 'border-white bg-white'}`}>
+            <Pressable key={item} onPress={() => { setCategory(item); setGenerationMessage(null); setLetter('all'); setVisibleLimit(20); clearSearch(); }} className={`rounded-full border px-4 py-2.5 ${category === item ? 'border-[#146ef5] bg-[#146ef5]' : 'border-white bg-white'}`}>
               <Text className={`font-bold ${category === item ? 'text-white' : 'text-[#52647b]'}`}>{item}</Text>
             </Pressable>
           ))}
@@ -185,7 +275,7 @@ export function VocabularyScreen() {
             <View className="mb-4 mt-2 overflow-hidden rounded-[26px] bg-[#10233f] p-5">
               <View className="flex-row items-center"><Ionicons name="sparkles" size={22} color="#8dc5ff" /><Text className="ml-2 text-lg font-extrabold text-white">AI vocabulary catalogue</Text></View>
               <Text className="mt-2 leading-5 text-[#c8d8ea]">{vocabulary.data?.catalogCount ?? 0} / {vocabulary.data?.catalogueTarget ?? 5000} words cached in Neon - {vocabulary.data?.categoryCount ?? 0} in this category</Text>
-              <Pressable disabled={generatePack.isPending} className="mt-4 items-center rounded-2xl bg-white px-5 py-3" onPress={() => generatePack.mutate()}>
+              <Pressable disabled={generatePack.isPending} className="mt-4 items-center rounded-2xl bg-white px-5 py-3" onPress={() => generatePack.mutate(category)}>
                 {generatePack.isPending ? <ActivityIndicator color="#146ef5" /> : <Text className="font-bold text-[#146ef5]">Generate 20 new verified words</Text>}
               </Pressable>
               {generationMessage ? <Text className="mt-3 text-center text-sm text-[#d8e8fa]">{generationMessage}</Text> : null}
@@ -199,6 +289,37 @@ export function VocabularyScreen() {
               </Pressable>
             </View>
 
+            <View className="mb-4 rounded-[24px] bg-white py-4 shadow-sm">
+              <View className="mb-3 flex-row items-center justify-between px-4">
+                <View className="flex-row items-center">
+                  <Ionicons name="library-outline" size={19} color="#6748d7" />
+                  <Text className="ml-2 font-extrabold text-[#10233f]">Dictionary A-Z</Text>
+                </View>
+                <Text className="text-xs font-bold text-[#718198]">{letter === 'all' ? 'All words' : `Letter ${letter}`}</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-4">
+                {alphabet.map((item) => {
+                  const active = letter === item;
+                  return (
+                    <Pressable
+                      key={item}
+                      className={`h-10 min-w-10 items-center justify-center rounded-xl px-3 ${active ? 'bg-[#6748d7]' : 'bg-[#f1edff]'}`}
+                      onPress={() => {
+                        setSearch('');
+                        setSubmittedSearch('');
+                        setStatusFilter('all');
+                        setLetter(item);
+                        setVisibleLimit(20);
+                        Keyboard.dismiss();
+                      }}
+                    >
+                      <Text className={`font-extrabold ${active ? 'text-white' : 'text-[#6748d7]'}`}>{item === 'all' ? 'All' : item}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
             <View className="mb-5 flex-row gap-2">
               {([
                 { label: 'Due', value: vocabulary.data?.stats.dueToday ?? 0, filter: 'due', icon: 'time-outline' },
@@ -208,7 +329,7 @@ export function VocabularyScreen() {
               ] as const).map((card) => {
                 const active = statusFilter === card.filter;
                 return (
-                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-2xl px-1 py-3 ${active ? 'bg-[#146ef5]' : 'bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setStatusFilter(active ? 'all' : card.filter); }}>
+                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-2xl px-1 py-3 ${active ? 'bg-[#146ef5]' : 'bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setLetter('all'); setVisibleLimit(20); setStatusFilter(active ? 'all' : card.filter); }}>
                     <Ionicons name={card.icon} size={18} color={active ? 'white' : '#146ef5'} />
                     <Text className={`mt-1 text-lg font-extrabold ${active ? 'text-white' : 'text-[#146ef5]'}`}>{card.value}</Text>
                     <Text className={`mt-0.5 text-[10px] font-bold ${active ? 'text-blue-100' : 'text-[#718198]'}`}>{card.label}</Text>
@@ -218,12 +339,21 @@ export function VocabularyScreen() {
             </View>
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="flex-1 pr-3 text-lg font-extrabold text-[#10233f]">
-                {submittedSearch ? `Search results for "${submittedSearch}"` : statusFilter === 'remembered' ? 'Remembered words' : statusFilter === 'difficult' ? 'Difficult words' : statusFilter === 'learning' ? 'Learning words' : statusFilter === 'due' ? 'Words due for review' : `Today's words - ${category}`}
+                {submittedSearch ? `Search results for "${submittedSearch}"` : statusFilter === 'remembered' ? 'Remembered words' : statusFilter === 'difficult' ? 'Difficult words' : statusFilter === 'learning' ? 'Learning words' : statusFilter === 'due' ? 'Words due for review' : letter !== 'all' ? `${letter} words - ${category}` : `All shared words - ${category}`}
               </Text>
               <View className="rounded-full bg-[#dcecff] px-3 py-1.5"><Text className="text-xs font-extrabold text-[#146ef5]">{vocabulary.data?.resultCount ?? 0} words</Text></View>
             </View>
             {vocabulary.data?.words.length === 0 ? <View className="mb-4 items-center rounded-3xl bg-white p-7"><Ionicons name="search-outline" size={34} color="#96a4b6" /><Text className="mt-3 text-center font-semibold text-[#52647b]">No matching vocabulary found.</Text></View> : null}
             {vocabulary.data?.words.map((word) => <WordCard key={word.id} word={word} saving={savingId === word.id} onReview={(action) => review.mutate({ id: word.id, action })} />)}
+            {vocabulary.data?.hasMore ? (
+              <Pressable
+                disabled={vocabulary.isFetching}
+                className="mb-5 items-center rounded-2xl border border-[#c9dcf3] bg-white py-4"
+                onPress={() => setVisibleLimit((current) => Math.min(500, current + 20))}
+              >
+                {vocabulary.isFetching ? <ActivityIndicator color="#146ef5" /> : <Text className="font-extrabold text-[#146ef5]">Load 20 more words</Text>}
+              </Pressable>
+            ) : null}
           </View>
         )}
       </ScrollView>

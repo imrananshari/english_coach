@@ -9,6 +9,7 @@ import {
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { publishVocabularyEvent } from '@/lib/ably';
 import { auth } from '@/lib/auth';
 import { generateVocabularyPack } from '@/lib/vocabulary-generator';
 
@@ -77,6 +78,9 @@ export async function GET(request: Request) {
   const search = url.searchParams.get('search')?.trim().slice(0, 80) ?? '';
   const requestedFilter = url.searchParams.get('filter');
   const filter = ['due', 'learning', 'remembered', 'difficult'].includes(requestedFilter ?? '') ? requestedFilter! : 'all';
+  const requestedLetter = url.searchParams.get('letter')?.toUpperCase() ?? 'ALL';
+  const letter = /^[A-Z]$/.test(requestedLetter) ? requestedLetter : 'all';
+  const limit = Math.min(500, Math.max(20, Number(url.searchParams.get('limit')) || 20));
   const loadWholeCatalogue = search.length >= 2 || filter !== 'all';
 
   const [profileRows, progressRows, totalRows, categoryRows, catalogue] = await Promise.all([
@@ -101,15 +105,14 @@ export async function GET(request: Request) {
   };
 
   const matchedWords = catalogue.filter((word) =>
-    (search.length < 2 || matchesHinglish(word, search)) && matchesFilter(word.id),
+    (search.length < 2 || matchesHinglish(word, search)) &&
+    matchesFilter(word.id) &&
+    (letter === 'all' || word.word.trim().toUpperCase().startsWith(letter)),
   );
   const resultCount = matchedWords.length;
-  const today = now.toISOString().slice(0, 10);
   const resultWords = matchedWords
-    .sort((left, right) => search || filter !== 'all'
-      ? left.word.localeCompare(right.word)
-      : dailyRank(`${session.user.id}:${today}`, left.id) - dailyRank(`${session.user.id}:${today}`, right.id))
-    .slice(0, search || filter !== 'all' ? 50 : 8)
+    .sort((left, right) => left.word.localeCompare(right.word))
+    .slice(0, limit)
     .map((word) => {
       const progress = progressByWord.get(word.id);
       return {
@@ -124,7 +127,7 @@ export async function GET(request: Request) {
 
   return Response.json({
     categories, selectedCategory: category, level: profileRows[0]?.currentLevel ?? 'elementary', words: resultWords,
-    searchQuery: search, activeFilter: filter, resultCount,
+    searchQuery: search, activeFilter: filter, selectedLetter: letter, resultCount, hasMore: resultCount > resultWords.length,
     catalogCount: totalRows[0]?.value ?? catalogue.length, categoryCount: categoryRows[0]?.value ?? 0, catalogueTarget: 5000,
     stats: {
       learned: progressRows.filter((item) => item.learningStatus === 'remembered' || item.learningStatus === 'mastered').length,
@@ -146,7 +149,7 @@ export async function POST(request: Request) {
     db.select({ value: count() }).from(vocabulary),
   ]);
   const totalCount = total?.value ?? 0;
-  if (totalCount >= 5000) return Response.json({ message: 'The 5,000-word catalogue target is complete.', added: 0, total: totalCount });
+  if (totalCount >= 5000) return Response.json({ message: 'The 5,000-word catalogue target is complete.', added: 0, total: totalCount, categoryCount: existingWords.length, category: input.data.category, words: [] });
 
   try {
     const firstPack = await generateVocabularyPack({ category: input.data.category, level: profile?.currentLevel ?? 'intermediate', existingWords: existingWords.map((item) => item.word) });
@@ -159,8 +162,25 @@ export async function POST(request: Request) {
       synonyms: item.synonyms, antonyms: item.antonyms, commonMistake: item.commonMistake,
       register: item.register, phrasePatterns: item.phrasePatterns, conversationExamples: item.conversationExamples,
       contentSource: item.contentSource, level: profile?.currentLevel ?? 'intermediate', category: input.data.category, status: 'published' as const,
-    }))).onConflictDoNothing().returning({ id: vocabulary.id });
-    return Response.json({ added: inserted.length, total: totalCount + inserted.length, message: `${inserted.length} verified AI words added to ${input.data.category}.` });
+    }))).onConflictDoNothing().returning();
+    const [categoryTotal] = await db.select({ value: count() }).from(vocabulary).where(and(eq(vocabulary.category, input.data.category), eq(vocabulary.status, 'published')));
+    const response = {
+      added: inserted.length,
+      total: totalCount + inserted.length,
+      categoryCount: categoryTotal?.value ?? existingWords.length + inserted.length,
+      category: input.data.category,
+      message: `${inserted.length} verified AI words added to ${input.data.category}.`,
+      words: inserted.map((word) => ({
+        id: word.id, word: word.word, meaning: word.meaning, hindiMeaning: word.hindiMeaning,
+        pronunciation: word.pronunciation, partOfSpeech: word.partOfSpeech, simpleExplanation: word.simpleExplanation,
+        example: word.example, officeExample: word.officeExample, register: word.register,
+        phrasePatterns: word.phrasePatterns ?? [], conversationExamples: word.conversationExamples,
+        contentSource: word.contentSource, audioUrl: word.audioUrl, synonyms: word.synonyms ?? [], antonyms: word.antonyms ?? [],
+        status: 'new' as const, correctCount: 0,
+      })),
+    };
+    await publishVocabularyEvent(response).catch(() => undefined);
+    return Response.json(response);
   } catch (error) {
     return Response.json({ message: error instanceof Error ? error.message : 'Could not generate vocabulary.' }, { status: 503 });
   }

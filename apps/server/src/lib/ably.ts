@@ -19,3 +19,14 @@ export async function createStudyToken(roomId: string, userId: string) {
 export async function publishStudyEvent(roomId: string, name: string, data: unknown) {
   await getClient().channels.get(studyChannel(roomId)).publish(name, data);
 }
+export const vocabularyChannel = 'vocabulary:catalogue';
+export async function createVocabularyToken(userId: string) {
+  return getClient().auth.createTokenRequest({
+    clientId: userId,
+    ttl: 60 * 60 * 1000,
+    capability: JSON.stringify({ [vocabularyChannel]: ['subscribe'] }),
+  });
+}
+export async function publishVocabularyEvent(data: unknown) {
+  await getClient().channels.get(vocabularyChannel).publish('vocabulary-generated', data);
+}

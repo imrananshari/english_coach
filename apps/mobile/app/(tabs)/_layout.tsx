@@ -48,7 +48,7 @@ function AnimatedTabButton(props: AnimatedTabButtonProps) {
 export default function TabsLayout() {
   const { data: session, isPending } = useAuthSession();
   const insets = useSafeAreaInsets();
-  const sideMargin = 18;
+  const sideMargin = Platform.OS === 'android' ? 24 : 18;
   const bottomMargin = insets.bottom + 8;
 
   if (isPending) return <View className="flex-1 items-center justify-center bg-[#eaf4ff]"><ActivityIndicator color="#146ef5" /></View>;
@@ -72,7 +72,7 @@ export default function TabsLayout() {
           left: sideMargin,
           right: sideMargin,
           height: 70,
-          paddingHorizontal: 5,
+          paddingHorizontal: Platform.OS === 'android' ? 3 : 5,
           paddingTop: 7,
           paddingBottom: 7,
           borderTopWidth: 0,
@@ -84,7 +84,7 @@ export default function TabsLayout() {
           shadowOffset: { width: 0, height: 7 },
           elevation: 12,
         },
-        tabBarIcon: ({ color, size }) => <Ionicons name={iconNames[route.name as keyof typeof iconNames]} color={color} size={size - 1} />,
+        tabBarIcon: ({ color, size }) => <Ionicons name={iconNames[route.name as keyof typeof iconNames]} color={color} size={size - (Platform.OS === 'android' ? 2 : 1)} />,
       })}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
