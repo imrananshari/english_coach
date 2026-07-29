@@ -3,6 +3,7 @@ import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
 import { Children, useRef, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthSession } from '@/lib/auth-client';
 
@@ -46,14 +47,16 @@ function AnimatedTabButton(props: AnimatedTabButtonProps) {
 
 export default function TabsLayout() {
   const { data: session, isPending } = useAuthSession();
+  const insets = useSafeAreaInsets();
   const sideMargin = 18;
+  const bottomMargin = insets.bottom + 8;
 
   if (isPending) return <View className="flex-1 items-center justify-center bg-[#eaf4ff]"><ActivityIndicator color="#146ef5" /></View>;
   if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
-      safeAreaInsets={Platform.OS === 'android' ? { bottom: 0 } : undefined}
+      safeAreaInsets={{ bottom: 0 }}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#146ef5',
@@ -65,7 +68,7 @@ export default function TabsLayout() {
         tabBarBackground: () => <GlassBackground />,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 18 : 0,
+          bottom: bottomMargin,
           left: sideMargin,
           right: sideMargin,
           height: 70,
