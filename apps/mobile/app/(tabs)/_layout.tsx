@@ -1,25 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { Children, useRef, type ComponentProps, type ReactNode } from 'react';
+import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthSession } from '@/lib/auth-client';
 
-const iconNames = {
-  index: 'home',
-  learn: 'book',
-  speak: 'mic',
-  progress: 'stats-chart',
-  profile: 'person',
-} as const;
+const iconNames = { index: 'home', learn: 'book', speak: 'mic', progress: 'stats-chart', profile: 'person' } as const;
+
+function GlassBackground() {
+  return (
+    <View pointerEvents="none" style={styles.glassShell}>
+      {Platform.OS === 'ios' ? (
+        <BlurView intensity={70} tint="systemUltraThinMaterialLight" style={StyleSheet.absoluteFill} />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.androidGlass]} />
+      )}
+      <View style={styles.glassTint} />
+    </View>
+  );
+}
+
+type PressableProps = ComponentProps<typeof Pressable>;
+type AnimatedTabButtonProps = Pick<PressableProps, 'accessibilityLabel' | 'accessibilityRole' | 'accessibilityState' | 'onLongPress' | 'onPress' | 'testID'> & { children?: ReactNode };
+
+function AnimatedTabButton(props: AnimatedTabButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const animateTo = (value: number) => Animated.spring(scale, { toValue: value, damping: 15, stiffness: 260, useNativeDriver: true }).start();
+  return (
+    <Pressable
+      accessibilityLabel={props.accessibilityLabel}
+      accessibilityRole={props.accessibilityRole}
+      accessibilityState={props.accessibilityState}
+      onLongPress={props.onLongPress}
+      onPress={props.onPress}
+      onPressIn={() => animateTo(0.88)}
+      onPressOut={() => animateTo(1)}
+      testID={props.testID}
+      style={styles.tabPressable}
+    >
+      <Animated.View style={[styles.tabContent, { transform: [{ scale }] }]}>{Children.map(props.children, (child) => typeof child === 'string' || typeof child === 'number' ? <Text>{child}</Text> : child)}</Animated.View>
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   const { data: session, isPending } = useAuthSession();
-  if (isPending)
-    return (
-      <View className="flex-1 items-center justify-center bg-[#eaf4ff]">
-        <ActivityIndicator color="#146ef5" />
-      </View>
-    );
+  const sideMargin = 18;
+
+  if (isPending) return <View className="flex-1 items-center justify-center bg-[#eaf4ff]"><ActivityIndicator color="#146ef5" /></View>;
   if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
@@ -28,33 +57,30 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#146ef5',
         tabBarInactiveTintColor: '#8796aa',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+        tabBarHideOnKeyboard: true,
+        tabBarLabelStyle: { fontSize: Platform.OS === 'android' ? 10 : 10.5, fontWeight: '700', marginTop: 1 },
+        tabBarItemStyle: { minWidth: 0 },
+        tabBarButton: (props) => <AnimatedTabButton {...props} />,
+        tabBarBackground: () => <GlassBackground />,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 20 : 14,
-          left: 16,
-          right: 16,
-          height: 72,
-          paddingTop: 9,
-          paddingBottom: 9,
-          borderRadius: 26,
-          backgroundColor: 'rgba(255,255,255,0.94)',
-          borderTopWidth: 1,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.95)',
-          shadowColor: '#4779b8',
+          bottom: Platform.OS === 'ios' ? 18 : 5,
+          left: sideMargin,
+          right: sideMargin,
+          height: 70,
+          paddingHorizontal: 5,
+          paddingTop: 7,
+          paddingBottom: 7,
+          borderTopWidth: 0,
+          borderRadius: 27,
+          backgroundColor: 'transparent',
+          shadowColor: '#315b8f',
           shadowOpacity: 0.16,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 7 },
-          elevation: 10,
+          elevation: 12,
         },
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons
-            name={iconNames[route.name as keyof typeof iconNames]}
-            color={color}
-            size={size - 1}
-          />
-        ),
+        tabBarIcon: ({ color, size }) => <Ionicons name={iconNames[route.name as keyof typeof iconNames]} color={color} size={size - 1} />,
       })}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
@@ -65,3 +91,18 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  glassShell: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 27,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(247,251,255,0.75)',
+  },
+  glassTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.18)' },
+  androidGlass: { backgroundColor: 'rgba(247,251,255,0.96)' },
+  tabPressable: { flex: 1, alignItems: 'stretch', justifyContent: 'center' },
+  tabContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+});

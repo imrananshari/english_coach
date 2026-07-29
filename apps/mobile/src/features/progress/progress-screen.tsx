@@ -88,6 +88,12 @@ export function ProgressScreen() {
         </View>
 
         <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+          <View className="flex-row items-center justify-between"><View><Text className="text-xl font-extrabold text-[#10233f]">Learning consistency</Text><Text className="mt-1 text-sm text-[#718198]">Active learning days from Neon</Text></View><Ionicons name="flame" size={27} color="#ff7a59" /></View>
+          <View className="mt-5 flex-row gap-3"><View className="flex-1 rounded-2xl bg-[#fff0eb] p-4"><Text className="text-2xl font-extrabold text-[#e85e3b]">{data.streak.currentStreak}</Text><Text className="mt-1 text-xs font-semibold text-[#8a6d65]">Current streak</Text></View><View className="flex-1 rounded-2xl bg-[#f0edff] p-4"><Text className="text-2xl font-extrabold text-[#7c5cff]">{data.streak.longestStreak}</Text><Text className="mt-1 text-xs font-semibold text-[#736c90]">Longest streak</Text></View></View>
+          <View className="mt-5 flex-row justify-between">{data.streak.week.map((day) => <View key={day.date} className="items-center"><Text className={`text-xs font-bold ${day.isToday ? 'text-[#146ef5]' : 'text-[#8a98aa]'}`}>{day.dayLabel}</Text><View className={`mt-2 h-8 w-8 items-center justify-center rounded-full ${day.goalReached ? 'bg-[#ff7a59]' : day.active ? 'bg-[#ffe4dc]' : 'bg-[#edf1f5]'}`}><Ionicons name={day.goalReached ? 'flame' : day.active ? 'checkmark' : 'ellipse-outline'} size={15} color={day.goalReached ? 'white' : day.active ? '#e85e3b' : '#a8b3c0'} /></View><Text className="mt-1 text-[10px] text-[#8a98aa]">{day.minutes}m</Text></View>)}</View>
+        </View>
+
+        <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
           <Text className="mb-5 text-xl font-extrabold text-[#10233f]">Skill scores</Text>
           {scores.map(([label, score]) => <ScoreBar key={label} label={label} score={score} />)}
         </View>

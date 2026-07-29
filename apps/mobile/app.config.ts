@@ -2,7 +2,8 @@ import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
   name: 'English Coach',
-  slug: 'english-coach',
+  slug: 'english-learning-app',
+  owner: 'imran_dev',
   version: '1.0.0',
   scheme: 'englishcoach',
   userInterfaceStyle: 'automatic',
@@ -18,7 +19,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    package: 'com.englishcoach.app',
+    package: 'com.imran_dev.englishlearningapp',
     versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
@@ -27,6 +28,7 @@ const config: ExpoConfig = {
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
+    softwareKeyboardLayoutMode: 'resize',
   },
   web: {
     bundler: 'metro',
@@ -63,6 +65,7 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  extra: { eas: { projectId: '67c4381c-2520-479f-b2be-3026536516aa' } },
   experiments: { typedRoutes: true },
 };
 

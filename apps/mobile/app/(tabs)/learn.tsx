@@ -1,4 +1,2 @@
-import { PlaceholderScreen } from '@/components/common/placeholder-screen';
-export default function LearnRoute() {
-  return <PlaceholderScreen title="Learn" />;
-}
+import { LearnScreen } from '@/features/learn/learn-screen';
+export default function LearnRoute() { return <LearnScreen />; }

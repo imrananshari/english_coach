@@ -1,4 +1,2 @@
-import { PlaceholderScreen } from '@/components/common/placeholder-screen';
-export default function SpeakRoute() {
-  return <PlaceholderScreen title="Speak" />;
-}
+import { SpeakingScreen } from '@/features/speaking/speaking-screen';
+export default function SpeakRoute() { return <SpeakingScreen />; }

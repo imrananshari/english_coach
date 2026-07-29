@@ -481,6 +481,91 @@ export const conversations = pgTable(
   ],
 );
 
+export const studyRooms = pgTable(
+  'study_rooms',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    code: text('code').notNull().unique(),
+    hostUserId: text('host_user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    visibility: text('visibility').default('public').notNull(),
+    status: activityStatusEnum('status').default('in-progress').notNull(),
+    maxMembers: integer('max_members').default(12).notNull(),
+    currentActivityId: uuid('current_activity_id'),
+    ...timestamps,
+  },
+  (table) => [
+    index('study_rooms_status_created_idx').on(table.status, table.createdAt),
+    index('study_rooms_host_idx').on(table.hostUserId),
+  ],
+);
+
+export const studyRoomMembers = pgTable(
+  'study_room_members',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    roomId: uuid('room_id').notNull().references(() => studyRooms.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').default('member').notNull(),
+    status: text('status').default('joined').notNull(),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('study_room_members_room_user_uidx').on(table.roomId, table.userId),
+    index('study_room_members_user_status_idx').on(table.userId, table.status),
+  ],
+);
+
+export const studyRoomMessages = pgTable(
+  'study_room_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    roomId: uuid('room_id').notNull().references(() => studyRooms.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    message: text('message').notNull(),
+    messageType: text('message_type').default('chat').notNull(),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('study_room_messages_room_created_idx').on(table.roomId, table.createdAt)],
+);
+
+export const studyRoomActivities = pgTable(
+  'study_room_activities',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    roomId: uuid('room_id').notNull().references(() => studyRooms.id, { onDelete: 'cascade' }),
+    createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    activityType: text('activity_type').notNull(),
+    title: text('title').notNull(),
+    content: jsonb('content').$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
+    answerKey: jsonb('answer_key').$type<Record<string, unknown>>(),
+    status: activityStatusEnum('status').default('in-progress').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [index('study_room_activities_room_started_idx').on(table.roomId, table.startedAt)],
+);
+
+export const studyRoomAnswers = pgTable(
+  'study_room_answers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    activityId: uuid('activity_id').notNull().references(() => studyRoomActivities.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    answer: jsonb('answer').$type<unknown>().notNull(),
+    isCorrect: boolean('is_correct').notNull(),
+    score: integer('score').default(0).notNull(),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('study_room_answers_activity_user_uidx').on(table.activityId, table.userId),
+    index('study_room_answers_user_idx').on(table.userId),
+  ],
+);
 export const writingSubmissions = pgTable(
   'writing_submissions',
   {

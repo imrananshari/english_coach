@@ -309,6 +309,8 @@ export function AssessmentScreen() {
         <ScrollView
           contentContainerClassName="px-5 pb-10 pt-4"
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
         >
           <Pressable
             className="mb-5 h-11 w-11 items-center justify-center rounded-full bg-white"

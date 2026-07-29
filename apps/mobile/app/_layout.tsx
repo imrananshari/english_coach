@@ -16,6 +16,7 @@ export default function RootLayout() {
         <Stack.Screen name="assessment" />
         <Stack.Screen name="vocabulary" />
         <Stack.Screen name="grammar" />
+        <Stack.Screen name="study" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </AppProviders>

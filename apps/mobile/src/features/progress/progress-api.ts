@@ -11,6 +11,7 @@ export interface ProgressData {
     streak: number;
     totalXp: number;
   } | null;
+  streak: { currentStreak:number;longestStreak:number;todayMinutes:number;remainingMinutes:number;goalPercentage:number;goalReached:boolean;activeDaysThisWeek:number;week:Array<{date:string;dayLabel:string;minutes:number;active:boolean;goalReached:boolean;isToday:boolean}> };
   assessments: AssessmentResult[];
   dailyProgress: Array<{
     progressDate: string;

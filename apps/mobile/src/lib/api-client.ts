@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
+const PRODUCTION_API_URL = 'https://english-coach-server.vercel.app';
 
 const configuredApiUrl =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
@@ -13,7 +14,7 @@ function resolveApiBaseUrl(): string {
   ) {
     return `${window.location.protocol}//${window.location.hostname}:3000`;
   }
-  return configuredApiUrl;
+  return configuredApiUrl || PRODUCTION_API_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();

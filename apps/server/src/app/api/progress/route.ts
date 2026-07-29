@@ -10,6 +10,7 @@ import {
 import { desc, eq } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
+import { calculateLearningStreak } from '@/lib/streak';
 
 export const runtime = 'nodejs';
 
@@ -56,8 +57,7 @@ export async function GET(request: Request) {
         .select()
         .from(userProgress)
         .where(eq(userProgress.userId, session.user.id))
-        .orderBy(desc(userProgress.progressDate))
-        .limit(30),
+        .orderBy(desc(userProgress.progressDate)),
       db
         .select({
           status: userLessonProgress.status,
@@ -103,9 +103,15 @@ export async function GET(request: Request) {
     recentActivity.reduce((sum, item) => sum + item.durationSeconds, 0) / 60,
   );
   const totalLearningMinutes = recordedDailyMinutes || activityMinutes;
+  const profileData = profile[0] ?? null;
+  const streak = calculateLearningStreak(dailyProgress, profileData?.dailyLearningMinutes ?? 15);
+  if (profileData && (profileData.streak !== streak.currentStreak || profileData.longestStreak !== streak.longestStreak)) {
+    await db.update(userProfiles).set({ streak: streak.currentStreak, longestStreak: streak.longestStreak, updatedAt: new Date() }).where(eq(userProfiles.userId, session.user.id));
+  }
 
   return Response.json({
-    profile: profile[0] ?? null,
+    profile: profileData ? { ...profileData, streak: streak.currentStreak, longestStreak: streak.longestStreak } : null,
+    streak,
     assessments: assessments.map(assessmentView),
     dailyProgress,
     recentActivity,

@@ -17,7 +17,7 @@
                     "db:migrate":  "corepack pnpm --filter @english-coach/database db:migrate",
                     "db:push":  "corepack pnpm --filter @english-coach/database db:push",
                     "db:studio":  "corepack pnpm --filter @english-coach/database db:studio",
-                    "build:apk":  "corepack pnpm --dir apps/mobile dlx eas-cli build --platform android --profile preview"
+                    "build:apk":  "cd apps/mobile && corepack pnpm dlx eas-cli build --platform android --profile preview"
                 },
     "devDependencies":  {
                             "@babel/core":  "7.28.5",

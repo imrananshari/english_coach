@@ -28,6 +28,7 @@ const serverEnvSchema = z.object({
   IMAGEKIT_URL_ENDPOINT: optionalNonEmpty,
   GROQ_API_KEY: optionalNonEmpty,
   GROQ_TEXT_MODEL: z.string().default('openai/gpt-oss-20b'),
+  ABLY_API_KEY: optionalNonEmpty,
 });
 
 export const serverEnv = serverEnvSchema.parse({
@@ -47,6 +48,7 @@ export const serverEnv = serverEnvSchema.parse({
   IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT,
   GROQ_API_KEY: process.env.GROQ_API_KEY,
   GROQ_TEXT_MODEL: process.env.GROQ_TEXT_MODEL,
+  ABLY_API_KEY: process.env.ABLY_API_KEY,
 });
 
 function configuredOrigins(): string[] {

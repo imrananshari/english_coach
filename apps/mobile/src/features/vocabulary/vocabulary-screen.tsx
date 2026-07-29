@@ -141,7 +141,7 @@ export function VocabularyScreen() {
     onMutate: ({ id }) => setSavingId(id),
     onSettled: async () => {
       setSavingId(null);
-      await Promise.all([queryClient.invalidateQueries({ queryKey: ['vocabulary'] }), queryClient.invalidateQueries({ queryKey: ['progress'] })]);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ['vocabulary'] }), queryClient.invalidateQueries({ queryKey: ['progress'] }), queryClient.invalidateQueries({ queryKey: ['learn'] })]);
     },
   });
   const generatePack = useMutation({
@@ -166,7 +166,7 @@ export function VocabularyScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-28">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-28" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-5 py-3">
           {(vocabulary.data?.categories ?? fallbackCategories).map((item) => (
             <Pressable key={item} onPress={() => { setCategory(item); setGenerationMessage(null); clearSearch(); }} className={`rounded-full border px-4 py-2.5 ${category === item ? 'border-[#146ef5] bg-[#146ef5]' : 'border-white bg-white'}`}>

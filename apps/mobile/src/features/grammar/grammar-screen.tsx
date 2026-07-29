@@ -36,7 +36,7 @@ function TopicLesson({ topic, onBack }: { topic: GrammarTopic; onBack: () => voi
   const progress = useMutation({
     mutationFn: saveGrammarProgress,
     onSuccess: async () => {
-      await Promise.all([queryClient.invalidateQueries({ queryKey: grammarQueryKey }), queryClient.invalidateQueries({ queryKey: ['progress'] })]);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: grammarQueryKey }), queryClient.invalidateQueries({ queryKey: ['progress'] }), queryClient.invalidateQueries({ queryKey: ['learn'] })]);
     },
   });
   const askTeacher = useMutation({
@@ -54,7 +54,7 @@ function TopicLesson({ topic, onBack }: { topic: GrammarTopic; onBack: () => voi
     mutationFn: () => submitGrammarPractice(aiPractice!.sessionId, aiAnswers),
     onSuccess: async (result) => {
       setAiResult(result);
-      await Promise.all([queryClient.invalidateQueries({ queryKey: grammarQueryKey }), queryClient.invalidateQueries({ queryKey: ['progress'] })]);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: grammarQueryKey }), queryClient.invalidateQueries({ queryKey: ['progress'] }), queryClient.invalidateQueries({ queryKey: ['learn'] })]);
     },
   });
 
@@ -80,7 +80,7 @@ function TopicLesson({ topic, onBack }: { topic: GrammarTopic; onBack: () => voi
         <View className="ml-3 min-w-0 flex-1"><Text className="text-xs font-bold uppercase text-[#18a67e]">{topic.category}</Text><Text className="mt-0.5 text-lg font-extrabold text-[#10233f]" numberOfLines={1}>{topic.title}</Text></View>
         {completed ? <Ionicons name="checkmark-circle" size={29} color="#18a67e" /> : null}
       </View>
-      <ScrollView contentContainerClassName="px-5 pb-28" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="px-5 pb-28" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         <View className="mt-4 overflow-hidden rounded-[28px] bg-[#126e58] p-6">
           <View className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
           <Text className="text-3xl font-extrabold leading-9 text-white">{topic.title}</Text>
@@ -212,7 +212,7 @@ export function GrammarScreen() {
         <Pressable className="h-11 w-11 items-center justify-center rounded-full bg-white" onPress={() => router.back()}><Ionicons name="arrow-back" size={22} color="#10233f" /></Pressable>
         <View className="ml-4"><Text className="text-2xl font-extrabold text-[#10233f]">Grammar academy</Text><Text className="text-sm text-[#718198]">Rules made clear and practical</Text></View>
       </View>
-      <ScrollView contentContainerClassName="pb-28" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="pb-28" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>
         <View className="mx-5 mt-2 overflow-hidden rounded-[28px] bg-[#126e58] p-6">
           <View className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10" />
           <Text className="text-sm font-bold uppercase tracking-wider text-[#b8eadb]">Your grammar journey</Text>

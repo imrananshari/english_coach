@@ -1,7 +1,7 @@
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import type { PropsWithChildren } from 'react';
 import { useEffect } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/lib/query-client';
@@ -17,7 +17,13 @@ export function AppProviders({ children }: PropsWithChildren) {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      {Platform.OS === 'android' ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="height" keyboardVerticalOffset={0}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </KeyboardAvoidingView>
+      ) : (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      )}
     </SafeAreaProvider>
   );
 }

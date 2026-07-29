@@ -22,11 +22,13 @@ export function AuthShell({ children }: PropsWithChildren) {
       <View className="absolute -left-24 top-80 h-64 w-64 rounded-full bg-[#9f8cff]/20" />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerClassName="flex-grow justify-center px-5 py-8"
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-7 items-center">
