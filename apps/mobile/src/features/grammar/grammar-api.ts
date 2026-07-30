@@ -1,3 +1,5 @@
+import type * as Ably from 'ably';
+
 import { apiClient } from '@/lib/api-client';
 import { getAuthenticatedHeaders } from '@/lib/auth-client';
 
@@ -20,7 +22,21 @@ export interface GrammarTopic {
   commonMistakes: string[];
   keyVocabulary: Array<{ term: string; meaning: string }>;
   practiceQuestions: Array<{ id: string; question: string; options: string[]; answer: number; explanation: string }>;
+  aiDeepDive: GrammarDeepDive | null;
   progress: { status: string; completionPercentage: number; bestScore: number | null; attempts: number } | null;
+}
+export interface GrammarDeepDive {
+  simpleEnglish: string;
+  hindiExplanation: string;
+  learningGoals: string[];
+  whenToUse: Array<{ situation: string; explanation: string }>;
+  formulaCards: Array<{ label: string; formula: string; example: string; hindi: string }>;
+  guidedExamples: Array<{ english: string; hindi: string; why: string; context: string }>;
+  comparisons: Array<{ left: string; right: string; difference: string; example: string }>;
+  mistakes: Array<{ wrong: string; correct: string; why: string }>;
+  memoryTips: string[];
+  miniTasks: Array<{ id: string; type: 'choose' | 'correct' | 'translate' | 'create'; prompt: string; hint: string; modelAnswer: string; explanation: string }>;
+  generatedAt: string;
 }
 export interface GrammarData {
   topics: GrammarTopic[];
@@ -36,6 +52,12 @@ export function saveGrammarProgress(input: { topicId: string; action: 'complete'
 }
 export function askGrammarTeacher(input: { topicId: string; question: string }) {
   return apiClient.post<{ answer: string }>('/api/grammar/ask', input, { headers: getAuthenticatedHeaders(), timeoutMs: 25_000 });
+}
+export function fetchGrammarDeepDive(topicId: string) {
+  return apiClient.post<{ deepDive: GrammarDeepDive; cached: boolean }>('/api/grammar/deep-dive', { topicId }, { headers: getAuthenticatedHeaders(), timeoutMs: 120_000 });
+}
+export function fetchGrammarToken() {
+  return apiClient.post<Ably.TokenRequest>('/api/grammar/token', undefined, { headers: getAuthenticatedHeaders() });
 }
 export function grammarLevelLabel(level: GrammarLevel) {
   return level.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');

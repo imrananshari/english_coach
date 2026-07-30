@@ -161,6 +161,12 @@ export async function POST(request: Request) {
       secondPackLimited = true;
     }
     const pack = [...firstPack, ...secondPack];
+    if (!pack.length) {
+      return Response.json({
+        added: 0, total: totalCount, categoryCount: existingWords.length, category: input.data.category, words: [],
+        message: `The verified ${input.data.category} starter collection is already saved. More curated words will be added in the next catalogue update.`,
+      });
+    }
     const inserted = await db.insert(vocabulary).values(pack.map((item) => ({
       word: item.word.toLowerCase(), meaning: item.meaning, hindiMeaning: item.hindiMeaning,
       pronunciation: item.pronunciation, audioUrl: item.audioUrl, partOfSpeech: item.partOfSpeech,
@@ -176,8 +182,8 @@ export async function POST(request: Request) {
       categoryCount: categoryTotal?.value ?? existingWords.length + inserted.length,
       category: input.data.category,
       message: secondPackLimited
-        ? `${inserted.length} verified AI words added. Groq saved the successful pack; tap again shortly to add the next pack.`
-        : `${inserted.length} verified AI words added to ${input.data.category}.`,
+        ? `${inserted.length} verified words added. The available curated pack was saved safely.`
+        : `${inserted.length} verified words added to ${input.data.category}.`,
       words: inserted.map((word) => ({
         id: word.id, word: word.word, meaning: word.meaning, hindiMeaning: word.hindiMeaning,
         pronunciation: word.pronunciation, partOfSpeech: word.partOfSpeech, simpleExplanation: word.simpleExplanation,

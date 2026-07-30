@@ -1,0 +1,1 @@
+ALTER TABLE "grammar_topics" ADD COLUMN "ai_deep_dive" jsonb;

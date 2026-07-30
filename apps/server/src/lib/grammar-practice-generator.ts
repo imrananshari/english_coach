@@ -40,15 +40,16 @@ const delay = (milliseconds: number) => new Promise((resolve) => setTimeout(reso
 export async function generateGrammarPractice(input: {
   title: string; level: string; summary: string; structures: string[];
   rules: Array<{ title: string; description: string }>;
+  examples: string[]; exceptions: string[]; mistakes: string[];
   previousPrompts: string[];
 }): Promise<GeneratedGrammarPractice> {
   if (!serverEnv.GROQ_API_KEY) throw new Error('AI grammar practice is not configured. Add GROQ_API_KEY to apps/server/.env.local.');
-  const lesson = JSON.stringify({ title: input.title, level: input.level, summary: input.summary, structures: input.structures, rules: input.rules });
+  const lesson = JSON.stringify({ title: input.title, level: input.level, summary: input.summary, structures: input.structures, rules: input.rules, examples: input.examples, exceptions: input.exceptions, mistakes: input.mistakes });
   let lastMessage = 'The AI teacher is temporarily unavailable. Please try again.';
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const avoid = input.previousPrompts.slice(0, Math.max(0, 10 - attempt * 4)).map((item) => `- ${item.slice(0, 180)}`).join('\n') || '- None';
-    const prompt = `Create a fresh practice set for this English grammar lesson:\n${lesson}\nRandom seed: ${crypto.randomUUID()}\n\nReturn exactly 6 concise teaching examples and 5 multiple-choice questions. Use the target grammar accurately. Across the examples, include daily-life, meeting, and office contexts, with useful modern vocabulary and a plain-English meaning. Questions must have four plausible options, one unambiguous correct answer, and a teaching explanation. Match the lesson level. Do not ask trivia. Do not repeat these recent questions:\n${avoid}`;
+    const prompt = `Create a fresh practice set for this English grammar lesson:\n${lesson}\nRandom seed: ${crypto.randomUUID()}\n\nReturn exactly 6 detailed teaching examples and 5 varied multiple-choice learning tasks. Use the target grammar accurately. Across the examples, include daily-life, meeting, and office contexts, useful modern vocabulary, and explain why the grammar form is correct. The five tasks must cover: rule recognition, error correction, choosing grammar from context, Hindi-to-English translation, and practical office/daily-life application. Every task must have four plausible options, one unambiguous correct answer, and a teaching explanation that also explains the likely mistake. Match the lesson level. Do not ask trivia. Do not repeat these recent questions:\n${avoid}`;
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',

@@ -174,6 +174,19 @@ export const grammarTopics = pgTable(
     commonMistakes: jsonb('common_mistakes').$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
     keyVocabulary: jsonb('key_vocabulary').$type<Array<{ term: string; meaning: string }>>().default(sql`'[]'::jsonb`).notNull(),
     practiceQuestions: jsonb('practice_questions').$type<Array<{ id: string; question: string; options: string[]; answer: number; explanation: string }>>().default(sql`'[]'::jsonb`).notNull(),
+    aiDeepDive: jsonb('ai_deep_dive').$type<{
+      simpleEnglish: string;
+      hindiExplanation: string;
+      learningGoals: string[];
+      whenToUse: Array<{ situation: string; explanation: string }>;
+      formulaCards: Array<{ label: string; formula: string; example: string; hindi: string }>;
+      guidedExamples: Array<{ english: string; hindi: string; why: string; context: string }>;
+      comparisons: Array<{ left: string; right: string; difference: string; example: string }>;
+      mistakes: Array<{ wrong: string; correct: string; why: string }>;
+      memoryTips: string[];
+      miniTasks: Array<{ id: string; type: string; prompt: string; hint: string; modelAnswer: string; explanation: string }>;
+      generatedAt: string;
+    } | null>(),
     status: publicationStatusEnum('status').default('draft').notNull(),
     ...timestamps,
   },

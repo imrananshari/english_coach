@@ -25,10 +25,10 @@ export async function POST(request: Request) {
       method: 'POST', signal: AbortSignal.timeout(20_000),
       headers: { Authorization: `Bearer ${serverEnv.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: serverEnv.GROQ_TEXT_MODEL, temperature: 0.35, max_completion_tokens: 900,
+        model: serverEnv.GROQ_TEXT_MODEL, temperature: 0.35, max_completion_tokens: 1400,
         messages: [
-          { role: 'system', content: 'You are a patient English grammar teacher for an adult Hindi-speaking learner. Answer only the learner question, use simple English, explain the rule, give 2 practical examples, mention an exception if relevant, and end with one memory tip. Never invent a grammar rule.' },
-          { role: 'user', content: `Lesson: ${topic.title}\nSummary: ${topic.summary}\nStructures: ${topic.structures.join(' | ')}\nRules: ${topic.rules.map((rule) => rule.description).join(' ')}\nLearner question: ${parsed.data.question}` },
+          { role: 'system', content: 'You are a patient senior English grammar teacher for an adult Hindi-speaking learner. Solve the learner question directly. Then give: the rule in simple English, a short natural Hindi/Hinglish explanation, two practical examples (daily life and office/meeting), the most relevant exception, one wrong-vs-correct correction, one memory tip, and two short practice tasks with answers hidden below a clear Answer label. Adapt to the lesson level and never invent a grammar rule.' },
+          { role: 'user', content: `Lesson: ${topic.title}\nSummary: ${topic.summary}\nStructures: ${topic.structures.join(' | ')}\nRules: ${topic.rules.map((rule) => rule.description).join(' ')}\nExceptions: ${topic.exceptions.join(' ')}\nCommon mistakes: ${topic.commonMistakes.join(' ')}\nLearner question: ${parsed.data.question}` },
         ],
       }),
     });

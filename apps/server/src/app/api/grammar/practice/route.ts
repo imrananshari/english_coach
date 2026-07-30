@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     try {
       const generated = await generateGrammarPractice({
         title: topic.title, level: topic.level, summary: topic.summary, structures: topic.structures, rules: topic.rules,
+        examples: topic.examples, exceptions: topic.exceptions, mistakes: topic.commonMistakes,
         previousPrompts: recent.flatMap((item) => item.questions.map((question) => question.question)),
       });
       const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);

@@ -8,6 +8,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FadeInView, PremiumPressable, glassShadow, heroShadow } from '@/components/premium-ui';
+
 import { fetchVocabulary, fetchVocabularyToken, generateVocabularyPack, reviewVocabulary, vocabularyQueryKey, type VocabularyData, type VocabularyFilter, type VocabularyWord } from './vocabulary-api';
 
 const defaultCategory = 'Daily Conversation';
@@ -41,7 +43,9 @@ function WordCard({ word, saving, onReview }: { word: VocabularyWord; saving: bo
   const [revealed, setRevealed] = useState(false);
   const isRemembered = word.status === 'remembered' || word.status === 'mastered';
   return (
-    <View className="mb-4 overflow-hidden rounded-[28px] border border-white bg-white p-5 shadow-sm">
+    <FadeInView className="mb-4 overflow-hidden rounded-[30px] border border-white/90 bg-white/95 p-5" style={glassShadow}>
+      <View className="absolute -right-12 -top-14 h-32 w-32 rounded-full bg-[#dcecff]/50" />
+      <View className="absolute -left-16 top-28 h-24 w-24 rounded-full bg-[#f1edff]/45" />
       <View className="flex-row items-start">
         <View className="flex-1 pr-3">
           <View className="flex-row flex-wrap items-center">
@@ -64,12 +68,12 @@ function WordCard({ word, saving, onReview }: { word: VocabularyWord; saving: bo
             <Text className="text-xs font-bold uppercase text-[#6748d7]">{word.register}</Text>
           </View>
         </View>
-        <Pressable className="h-11 w-11 items-center justify-center rounded-full bg-[#e8f2ff]" onPress={() => Speech.speak(word.word, { language: 'en-US', rate: 0.8 })}>
+        <PremiumPressable className="h-11 w-11 items-center justify-center rounded-full border border-white bg-[#e8f2ff]" style={glassShadow} onPress={() => Speech.speak(word.word, { language: 'en-US', rate: 0.8 })}>
           <Ionicons name="volume-high" size={21} color="#146ef5" />
-        </Pressable>
+        </PremiumPressable>
       </View>
 
-      <View className="mt-5 rounded-2xl bg-[#fff4df] p-4">
+      <View className="mt-5 rounded-[20px] border border-[#fff9ef] bg-[#fff4df]/90 p-4">
         <Text className="text-xs font-bold uppercase tracking-wider text-[#b37400]">Hindi meaning</Text>
         <Text className="mt-1 text-xl font-extrabold text-[#593b00]">{word.hindiMeaning}</Text>
       </View>
@@ -88,7 +92,7 @@ function WordCard({ word, saving, onReview }: { word: VocabularyWord; saving: bo
           {word.phrasePatterns.map((item) => <Text key={item} className="mt-2 leading-6 text-[#344a65]">- {item}</Text>)}
           <Text className="mt-4 text-xs font-bold uppercase tracking-wider text-[#73849a]">Use in conversation</Text>
           {word.conversationExamples.map((item) => (
-            <View key={item} className="mt-2 rounded-2xl bg-[#f3f7fb] p-3">
+            <View key={item} className="mt-2 rounded-2xl border border-white bg-[#f3f7fb]/90 p-3">
               <Text className="leading-6 text-[#344a65]">{`"${item}"`}</Text>
             </View>
           ))}
@@ -108,7 +112,7 @@ function WordCard({ word, saving, onReview }: { word: VocabularyWord; saving: bo
         <ScalePressable flex disabled={saving} className="items-center rounded-2xl bg-[#eef3f8] py-3" onPress={() => onReview('learning')}><Text className="font-bold text-[#52647b]">Learning</Text></ScalePressable>
         <ScalePressable flex disabled={saving} className="items-center rounded-2xl bg-[#e7f8f2] py-3" onPress={() => onReview('remembered')}><Text className="font-bold text-[#148764]">Remembered</Text></ScalePressable>
       </View>
-    </View>
+    </FadeInView>
   );
 }
 
@@ -245,14 +249,14 @@ function VocabularyCatalogue() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-[#edf6ff]" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-[#eef4ff]" edges={['top']}>
       <View className="flex-row items-center px-5 pb-3 pt-3">
-        <Pressable className="h-11 w-11 items-center justify-center rounded-full bg-white" onPress={() => router.back()}>
+        <PremiumPressable className="h-11 w-11 items-center justify-center rounded-full border border-white bg-white/90" style={glassShadow} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#10233f" />
-        </Pressable>
+        </PremiumPressable>
         <View className="ml-4">
           <Text className="text-2xl font-extrabold text-[#10233f]">Shared vocabulary</Text>
-          <Text className="text-sm text-[#718198]">Global dictionary Â· learn and review</Text>
+          <Text className="text-sm text-[#718198]">Global dictionary · learn and review</Text>
         </View>
       </View>
 
@@ -272,24 +276,26 @@ function VocabularyCatalogue() {
           </View>
         ) : (
           <View className="px-5">
-            <View className="mb-4 mt-2 overflow-hidden rounded-[26px] bg-[#10233f] p-5">
-              <View className="flex-row items-center"><Ionicons name="sparkles" size={22} color="#8dc5ff" /><Text className="ml-2 text-lg font-extrabold text-white">AI vocabulary catalogue</Text></View>
+            <FadeInView className="mb-5 mt-2 overflow-hidden rounded-[30px] border border-white/20 bg-[#162d55] p-5" style={heroShadow}>
+              <View className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#4b8cff]/25" />
+              <View className="absolute -bottom-16 left-20 h-32 w-32 rounded-full bg-[#8b6cff]/20" />
+              <View className="flex-row items-center"><Ionicons name="sparkles" size={22} color="#8dc5ff" /><Text className="ml-2 text-lg font-extrabold text-white">Verified vocabulary catalogue</Text></View>
               <Text className="mt-2 leading-5 text-[#c8d8ea]">{vocabulary.data?.catalogCount ?? 0} / {vocabulary.data?.catalogueTarget ?? 5000} words cached in Neon - {vocabulary.data?.categoryCount ?? 0} in this category</Text>
               <Pressable disabled={generatePack.isPending} className="mt-4 items-center rounded-2xl bg-white px-5 py-3" onPress={() => generatePack.mutate(category)}>
                 {generatePack.isPending ? <ActivityIndicator color="#146ef5" /> : <Text className="font-bold text-[#146ef5]">Generate 20 new verified words</Text>}
               </Pressable>
               {generationMessage ? <Text className="mt-3 text-center text-sm text-[#d8e8fa]">{generationMessage}</Text> : null}
-            </View>
+            </FadeInView>
 
-            <View className="mb-4 flex-row items-center rounded-2xl border border-white bg-white px-4 py-2 shadow-sm">
+            <FadeInView className="mb-4 flex-row items-center rounded-[22px] border border-white/90 bg-white/85 px-4 py-2" style={glassShadow}>
               <TextInput className="min-h-11 flex-1 text-base text-[#10233f]" value={search} onChangeText={setSearch} onSubmitEditing={submitSearch} returnKeyType="search" placeholder="Search word, meaning, Hindi or Hinglish..." placeholderTextColor="#8b99aa" autoCapitalize="none" autoCorrect={false} />
               {search.length > 0 ? <Pressable className="h-10 w-10 items-center justify-center" onPress={clearSearch}><Ionicons name="close-circle" size={21} color="#96a4b6" /></Pressable> : null}
               <Pressable className="h-11 w-11 items-center justify-center rounded-xl bg-[#146ef5]" onPress={submitSearch} accessibilityLabel="Search vocabulary">
                 {vocabulary.isFetching && submittedSearch ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="search" size={21} color="white" />}
               </Pressable>
-            </View>
+            </FadeInView>
 
-            <View className="mb-4 rounded-[24px] bg-white py-4 shadow-sm">
+            <FadeInView className="mb-4 rounded-[26px] border border-white/90 bg-white/85 py-4" style={glassShadow}>
               <View className="mb-3 flex-row items-center justify-between px-4">
                 <View className="flex-row items-center">
                   <Ionicons name="library-outline" size={19} color="#6748d7" />
@@ -318,7 +324,7 @@ function VocabularyCatalogue() {
                   );
                 })}
               </ScrollView>
-            </View>
+            </FadeInView>
 
             <View className="mb-5 flex-row gap-2">
               {([
@@ -329,7 +335,7 @@ function VocabularyCatalogue() {
               ] as const).map((card) => {
                 const active = statusFilter === card.filter;
                 return (
-                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-2xl px-1 py-3 ${active ? 'bg-[#146ef5]' : 'bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setLetter('all'); setVisibleLimit(20); setStatusFilter(active ? 'all' : card.filter); }}>
+                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-[20px] border px-1 py-3 ${active ? 'bg-[#146ef5]' : 'bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setLetter('all'); setVisibleLimit(20); setStatusFilter(active ? 'all' : card.filter); }}>
                     <Ionicons name={card.icon} size={18} color={active ? 'white' : '#146ef5'} />
                     <Text className={`mt-1 text-lg font-extrabold ${active ? 'text-white' : 'text-[#146ef5]'}`}>{card.value}</Text>
                     <Text className={`mt-0.5 text-[10px] font-bold ${active ? 'text-blue-100' : 'text-[#718198]'}`}>{card.label}</Text>

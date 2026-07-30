@@ -30,3 +30,14 @@ export async function createVocabularyToken(userId: string) {
 export async function publishVocabularyEvent(data: unknown) {
   await getClient().channels.get(vocabularyChannel).publish('vocabulary-generated', data);
 }
+export const grammarChannel = 'grammar:catalogue';
+export async function createGrammarToken(userId: string) {
+  return getClient().auth.createTokenRequest({
+    clientId: userId,
+    ttl: 60 * 60 * 1000,
+    capability: JSON.stringify({ [grammarChannel]: ['subscribe'] }),
+  });
+}
+export async function publishGrammarEvent(data: unknown) {
+  await getClient().channels.get(grammarChannel).publish('grammar-deep-dive-ready', data);
+}

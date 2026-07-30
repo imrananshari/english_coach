@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FadeInView, glassShadow, heroShadow } from '@/components/premium-ui';
+
 import { levelLabel } from '@/features/assessment/assessment-api';
 import { fetchProgress, progressQueryKey } from './progress-api';
 
@@ -30,10 +32,10 @@ function ScoreBar({ label, score }: { label: string; score: number | null }) {
 export function ProgressScreen() {
   const progress = useQuery({ queryKey: progressQueryKey, queryFn: fetchProgress });
   if (progress.isPending)
-    return <SafeAreaView className="flex-1 items-center justify-center bg-[#edf6ff]"><ActivityIndicator color="#146ef5" size="large" /></SafeAreaView>;
+    return <SafeAreaView className="flex-1 items-center justify-center bg-[#eef4ff]"><ActivityIndicator color="#146ef5" size="large" /></SafeAreaView>;
   if (progress.error)
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-[#edf6ff] px-6">
+      <SafeAreaView className="flex-1 items-center justify-center bg-[#eef4ff] px-6">
         <Ionicons name="cloud-offline-outline" size={42} color="#ef6c62" />
         <Text className="mt-4 text-center font-semibold text-[#10233f]">{progress.error.message}</Text>
         <Pressable className="mt-5 rounded-2xl bg-[#146ef5] px-6 py-3" onPress={() => progress.refetch()}><Text className="font-bold text-white">Try again</Text></Pressable>
@@ -44,7 +46,7 @@ export function ProgressScreen() {
   const latest = data.assessments[0];
   if (!latest)
     return (
-      <SafeAreaView className="flex-1 bg-[#edf6ff]" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-[#eef4ff]" edges={['top']}>
         <View className="flex-1 items-center justify-center px-7">
           <View className="h-24 w-24 items-center justify-center rounded-full bg-[#dcecff]"><Ionicons name="stats-chart" size={43} color="#146ef5" /></View>
           <Text className="mt-6 text-center text-3xl font-extrabold text-[#10233f]">Your progress starts here</Text>
@@ -60,19 +62,21 @@ export function ProgressScreen() {
     ['Workplace', latest.workplaceScore],
   ] as const;
   return (
-    <SafeAreaView className="flex-1 bg-[#edf6ff]" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-[#eef4ff]" edges={['top']}>
       <ScrollView contentContainerClassName="px-5 pb-28" showsVerticalScrollIndicator={false}>
         <Text className="mt-4 text-3xl font-extrabold text-[#10233f]">Your progress</Text>
         <Text className="mt-1 text-[#66778e]">Real learning data saved in your account</Text>
 
-        <View className="mt-6 rounded-[28px] bg-[#10233f] p-5">
+        <FadeInView className="mt-6 overflow-hidden rounded-[30px] border border-white/15 bg-[#172d50] p-5" style={heroShadow}>
+          <View className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#4f8dff]/25" />
+          <View className="absolute -bottom-16 left-16 h-32 w-32 rounded-full bg-[#896cff]/18" />
           <Text className="text-sm font-bold uppercase tracking-wider text-[#91b9ed]">Current level</Text>
           <Text className="mt-2 text-3xl font-extrabold text-white">{levelLabel(latest.assignedLevel)}</Text>
           <Text className="mt-1 text-[#c8d8ea]">Latest score: {latest.overallScore ?? 0}%</Text>
           <Pressable className="mt-5 self-start rounded-2xl bg-white px-5 py-3" onPress={() => router.push({ pathname: '/assessment', params: { view: 'result' } })}>
             <Text className="font-bold text-[#10233f]">View detailed feedback</Text>
           </Pressable>
-        </View>
+        </FadeInView>
 
         <View className="mt-4 flex-row gap-3">
           {[
@@ -80,28 +84,28 @@ export function ProgressScreen() {
             ['Words', data.summary.totalWordsLearned],
             ['Minutes', data.summary.totalLearningMinutes],
           ].map(([label, value]) => (
-            <View key={label} className="flex-1 rounded-2xl bg-white p-4 shadow-sm">
+            <View key={label} className="flex-1 rounded-[22px] border border-white/90 bg-white/90 p-4" style={glassShadow}>
               <Text className="text-2xl font-extrabold text-[#146ef5]">{value}</Text>
               <Text className="mt-1 text-xs font-semibold text-[#66778e]">{label}</Text>
             </View>
           ))}
         </View>
 
-        <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+        <View className="mt-5 overflow-hidden rounded-[30px] border border-white/90 bg-white/90 p-5" style={glassShadow}>
           <View className="flex-row items-center justify-between"><View><Text className="text-xl font-extrabold text-[#10233f]">Learning consistency</Text><Text className="mt-1 text-sm text-[#718198]">Active learning days from Neon</Text></View><Ionicons name="flame" size={27} color="#ff7a59" /></View>
           <View className="mt-5 flex-row gap-3"><View className="flex-1 rounded-2xl bg-[#fff0eb] p-4"><Text className="text-2xl font-extrabold text-[#e85e3b]">{data.streak.currentStreak}</Text><Text className="mt-1 text-xs font-semibold text-[#8a6d65]">Current streak</Text></View><View className="flex-1 rounded-2xl bg-[#f0edff] p-4"><Text className="text-2xl font-extrabold text-[#7c5cff]">{data.streak.longestStreak}</Text><Text className="mt-1 text-xs font-semibold text-[#736c90]">Longest streak</Text></View></View>
           <View className="mt-5 flex-row justify-between">{data.streak.week.map((day) => <View key={day.date} className="items-center"><Text className={`text-xs font-bold ${day.isToday ? 'text-[#146ef5]' : 'text-[#8a98aa]'}`}>{day.dayLabel}</Text><View className={`mt-2 h-8 w-8 items-center justify-center rounded-full ${day.goalReached ? 'bg-[#ff7a59]' : day.active ? 'bg-[#ffe4dc]' : 'bg-[#edf1f5]'}`}><Ionicons name={day.goalReached ? 'flame' : day.active ? 'checkmark' : 'ellipse-outline'} size={15} color={day.goalReached ? 'white' : day.active ? '#e85e3b' : '#a8b3c0'} /></View><Text className="mt-1 text-[10px] text-[#8a98aa]">{day.minutes}m</Text></View>)}</View>
         </View>
 
-        <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+        <View className="mt-5 overflow-hidden rounded-[30px] border border-white/90 bg-white/90 p-5" style={glassShadow}>
           <Text className="mb-5 text-xl font-extrabold text-[#10233f]">Skill scores</Text>
           {scores.map(([label, score]) => <ScoreBar key={label} label={label} score={score} />)}
         </View>
 
-        <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+        <View className="mt-5 overflow-hidden rounded-[30px] border border-white/90 bg-white/90 p-5" style={glassShadow}>
           <Text className="text-xl font-extrabold text-[#10233f]">Assessment history</Text>
           {data.assessments.map((item) => (
-            <View key={item.id} className="mt-4 flex-row items-center rounded-2xl bg-[#f3f7fb] p-4">
+            <View key={item.id} className="mt-4 flex-row items-center rounded-[20px] border border-white bg-[#f3f7fb]/90 p-4">
               <View className="h-11 w-11 items-center justify-center rounded-full bg-[#dcecff]"><Ionicons name="checkmark" size={23} color="#146ef5" /></View>
               <View className="ml-3 flex-1">
                 <Text className="font-bold text-[#10233f]">{levelLabel(item.assignedLevel)}</Text>
