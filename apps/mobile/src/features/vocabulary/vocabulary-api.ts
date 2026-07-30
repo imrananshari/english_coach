@@ -55,7 +55,7 @@ export function generateVocabularyPack(category: string) {
     message: string;
     category: string;
     words: VocabularyWord[];
-  }>('/api/vocabulary', { category }, { headers: getAuthenticatedHeaders(), timeoutMs: 60_000 });
+  }>('/api/vocabulary', { category }, { headers: getAuthenticatedHeaders(), timeoutMs: 120_000 });
 }
 export function fetchVocabularyToken() {
   return apiClient.post<Ably.TokenRequest>('/api/vocabulary/token', undefined, { headers: getAuthenticatedHeaders() });

@@ -153,7 +153,13 @@ export async function POST(request: Request) {
 
   try {
     const firstPack = await generateVocabularyPack({ category: input.data.category, level: profile?.currentLevel ?? 'intermediate', existingWords: existingWords.map((item) => item.word) });
-    const secondPack = await generateVocabularyPack({ category: input.data.category, level: profile?.currentLevel ?? 'intermediate', existingWords: [...existingWords.map((item) => item.word), ...firstPack.map((item) => item.word)] });
+    let secondPack: Awaited<ReturnType<typeof generateVocabularyPack>> = [];
+    let secondPackLimited = false;
+    try {
+      secondPack = await generateVocabularyPack({ category: input.data.category, level: profile?.currentLevel ?? 'intermediate', existingWords: [...existingWords.map((item) => item.word), ...firstPack.map((item) => item.word)] });
+    } catch {
+      secondPackLimited = true;
+    }
     const pack = [...firstPack, ...secondPack];
     const inserted = await db.insert(vocabulary).values(pack.map((item) => ({
       word: item.word.toLowerCase(), meaning: item.meaning, hindiMeaning: item.hindiMeaning,
@@ -169,7 +175,9 @@ export async function POST(request: Request) {
       total: totalCount + inserted.length,
       categoryCount: categoryTotal?.value ?? existingWords.length + inserted.length,
       category: input.data.category,
-      message: `${inserted.length} verified AI words added to ${input.data.category}.`,
+      message: secondPackLimited
+        ? `${inserted.length} verified AI words added. Groq saved the successful pack; tap again shortly to add the next pack.`
+        : `${inserted.length} verified AI words added to ${input.data.category}.`,
       words: inserted.map((word) => ({
         id: word.id, word: word.word, meaning: word.meaning, hindiMeaning: word.hindiMeaning,
         pronunciation: word.pronunciation, partOfSpeech: word.partOfSpeech, simpleExplanation: word.simpleExplanation,
