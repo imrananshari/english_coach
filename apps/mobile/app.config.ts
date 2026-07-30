@@ -18,6 +18,10 @@ const config: ExpoConfig = {
         'English Coach uses your microphone for English speaking and pronunciation practice.',
     },
   },
+  androidNavigationBar: {
+    backgroundColor: '#EDF6FF',
+    barStyle: 'dark-content',
+  },
   android: {
     package: 'com.imran_dev.englishlearningapp',
     versionCode: 1,

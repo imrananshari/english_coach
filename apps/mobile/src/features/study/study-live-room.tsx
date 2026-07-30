@@ -116,7 +116,7 @@ function FloatingChatButton({ unread, onPress }: { unread: number; onPress: () =
     ]).start();
   }, [scale, unread]);
   return (
-    <Animated.View className="absolute right-5 z-50" style={{ bottom: Math.max(insets.bottom + 16, 24), transform: [{ scale }], shadowColor: '#173f73', shadowOpacity: 0.3, shadowRadius: 13, shadowOffset: { width: 0, height: 7 }, elevation: 12 }}>
+    <Animated.View style={{ position: 'absolute', right: 20, bottom: Math.max(insets.bottom + 16, 24), width: 64, height: 64, zIndex: 50, backgroundColor: 'transparent', transform: [{ scale }], shadowColor: '#173f73', shadowOpacity: 0.3, shadowRadius: 13, shadowOffset: { width: 0, height: 7 }, elevation: 12 }}>
       <Pressable accessibilityRole="button" accessibilityLabel="Open group chat" className="h-16 w-16 items-center justify-center rounded-full border-2 border-white bg-[#146ef5] active:opacity-85" onPress={onPress}>
         <Ionicons name="chatbubble-ellipses" size={29} color="white" />
       </Pressable>
