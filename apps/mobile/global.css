@@ -29,6 +29,9 @@ html, body, #root {
 
 input, textarea, select {
   font-size: 16px !important;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 button, input, textarea, select {

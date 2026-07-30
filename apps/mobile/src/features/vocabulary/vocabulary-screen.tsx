@@ -335,7 +335,7 @@ function VocabularyCatalogue() {
               ] as const).map((card) => {
                 const active = statusFilter === card.filter;
                 return (
-                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-[20px] border px-1 py-3 ${active ? 'bg-[#146ef5]' : 'bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setLetter('all'); setVisibleLimit(20); setStatusFilter(active ? 'all' : card.filter); }}>
+                  <ScalePressable key={card.filter} flex pulseKey={card.value} className={`items-center rounded-[20px] border px-1 py-3 ${active ? 'border-[#146ef5] bg-[#146ef5]' : 'border-white/90 bg-white'}`} onPress={() => { setSearch(''); setSubmittedSearch(''); setLetter('all'); setVisibleLimit(20); setStatusFilter(active ? 'all' : card.filter); }}>
                     <Ionicons name={card.icon} size={18} color={active ? 'white' : '#146ef5'} />
                     <Text className={`mt-1 text-lg font-extrabold ${active ? 'text-white' : 'text-[#146ef5]'}`}>{card.value}</Text>
                     <Text className={`mt-0.5 text-[10px] font-bold ${active ? 'text-blue-100' : 'text-[#718198]'}`}>{card.label}</Text>

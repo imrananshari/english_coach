@@ -3,6 +3,7 @@ import {
   Animated,
   Platform,
   Pressable,
+  View,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
@@ -65,6 +66,10 @@ export function FadeInView({
       }),
     ]).start();
   }, [delay, opacity, translateY]);
+
+  if (Platform.OS === 'web') {
+    return <View className={className} style={style}>{children}</View>;
+  }
 
   return (
     <Animated.View
