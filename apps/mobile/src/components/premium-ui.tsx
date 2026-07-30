@@ -17,7 +17,7 @@ export const glassShadow: ViewStyle = Platform.select({
   },
   android: { elevation: 5 },
   default: {
-    boxShadow: '0 12px 34px rgba(57, 76, 112, 0.14)',
+    boxShadow: '0 6px 18px rgba(57, 76, 112, 0.10)',
   } as ViewStyle,
 })!;
 
@@ -30,7 +30,7 @@ export const heroShadow: ViewStyle = Platform.select({
   },
   android: { elevation: 9 },
   default: {
-    boxShadow: '0 18px 42px rgba(35, 61, 112, 0.24)',
+    boxShadow: '0 10px 26px rgba(35, 61, 112, 0.17)',
   } as ViewStyle,
 })!;
 
