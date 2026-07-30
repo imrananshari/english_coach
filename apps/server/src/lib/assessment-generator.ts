@@ -150,7 +150,8 @@ export async function generateAssessmentQuestions(input: {
   let lastStatus = 503;
   let lastRetryAfter: string | null = null;
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  const maxAttempts = 2;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const promptsToAvoid = recentPrompts.slice(0, Math.max(0, 8 - attempt * 4));
     const previous = promptsToAvoid.length
       ? promptsToAvoid.map((prompt) => `- ${prompt}`).join('\n')
@@ -169,6 +170,7 @@ ${previous}`;
     try {
       response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
+        signal: AbortSignal.timeout(12_000),
         headers: {
           Authorization: `Bearer ${serverEnv.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
@@ -192,7 +194,7 @@ ${previous}`;
         }),
       });
     } catch {
-      if (attempt < 2) {
+      if (attempt < maxAttempts - 1) {
         await delay(800 * (attempt + 1));
         continue;
       }
@@ -212,7 +214,7 @@ ${previous}`;
           // Retry a malformed model response with a shorter avoidance list.
         }
       }
-      if (attempt === 2)
+      if (attempt === maxAttempts - 1)
         throw new Error('The AI produced an invalid question set. Please try again.');
       await delay(700 * 2 ** attempt);
       continue;
@@ -224,7 +226,7 @@ ${previous}`;
       response.status === 429 ||
       response.status === 498 ||
       response.status >= 500;
-    if (!retryable || attempt === 2)
+    if (!retryable || attempt === maxAttempts - 1)
       throw new Error(friendlyGroqError(response.status, lastRetryAfter));
 
     const retrySeconds = Number.parseInt(lastRetryAfter ?? '', 10);

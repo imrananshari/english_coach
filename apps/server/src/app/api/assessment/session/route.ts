@@ -1,8 +1,9 @@
-import { assessmentSessions, db, userProfiles } from '@english-coach/database';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { assessmentSessions, db, grammarTopics, userProfiles, vocabulary } from '@english-coach/database';
+import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { generateAssessmentQuestions } from '@/lib/assessment-generator';
+import { generateCurriculumAssessment } from '@/lib/assessment-fallback';
+import { generateAssessmentQuestions, type GeneratedAssessmentQuestion } from '@/lib/assessment-generator';
 import { auth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -81,12 +82,38 @@ export async function POST(request: Request) {
     session.questions.map((question) => question.prompt),
   );
 
+  let questions: GeneratedAssessmentQuestion[];
+  let source: 'groq' | 'curriculum-fallback' = 'groq';
   try {
-    const questions = await generateAssessmentQuestions({
+    questions = await generateAssessmentQuestions({
       currentLevel: profile?.currentLevel,
       selectedGoal: parsed.data.selectedGoal,
       previousPrompts,
     });
+  } catch {
+    source = 'curriculum-fallback';
+    const [grammar, words] = await Promise.all([
+      db
+        .select({ title: grammarTopics.title, practiceQuestions: grammarTopics.practiceQuestions })
+        .from(grammarTopics)
+        .where(eq(grammarTopics.status, 'published'))
+        .limit(80),
+      db
+        .select({ word: vocabulary.word, meaning: vocabulary.meaning, example: vocabulary.example })
+        .from(vocabulary)
+        .where(eq(vocabulary.status, 'published'))
+        .orderBy(sql`random()`)
+        .limit(30),
+    ]);
+    questions = generateCurriculumAssessment({
+      grammar,
+      vocabulary: words,
+      selectedGoal: parsed.data.selectedGoal,
+      previousPrompts,
+    });
+  }
+
+  try {
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     const [created] = await db
       .insert(assessmentSessions)
@@ -103,16 +130,12 @@ export async function POST(request: Request) {
       sessionId: created.id,
       questions: publicQuestions(created.questions),
       expiresAt: created.expiresAt,
+      source,
     });
-  } catch (error) {
+  } catch {
     return Response.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Dynamic assessment generation failed.',
-      },
-      { status: 503 },
+      { message: 'Assessment session could not be saved. Please try again.' },
+      { status: 500 },
     );
   }
 }
